@@ -11,7 +11,7 @@ spec:
   project: cosmic-blanket
   source:
     repoURL: https://github.com/Jnowakoski15/cosmic-blanket.git
-    targetRevision: main
+    targetRevision: feature/cosmic-blanket-scaffold
     path: deployment/gitops/infrastructure/overlays/dev
   destination:
     server: https://kubernetes.default.svc
