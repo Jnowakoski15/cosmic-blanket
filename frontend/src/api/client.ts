@@ -22,7 +22,7 @@ const userManager = new UserManager({
 client.interceptors.request.use(async (config) => {
   try {
     const user = await userManager.getUser();
-    if (user?.access_token) {
+    if (user?.access_token && !user.expired) {
       config.headers.Authorization = `Bearer ${user.access_token}`;
     }
   } catch {
@@ -33,7 +33,10 @@ client.interceptors.request.use(async (config) => {
 
 client.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    if (error.response?.status === 401) {
+      await userManager.removeUser();
+    }
     if (error.response?.data) {
       const apiError: ApiError = error.response.data;
       return Promise.reject(apiError);
