@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka
+  labels:
+    app: kafka
+    app.kubernetes.io/part-of: cosmic-blanket
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka
+  template:
+    metadata:
+      labels:
+        app: kafka
+    spec:
+      initContainers:
+        - name: kafka-init
+          image: quay.io/strimzi/kafka:latest-kafka-3.7.0
+          command:
+            - /bin/bash
+            - -c
+            - |
+              export LOG_DIR=/tmp/kafka-logs
+              mkdir -p /tmp/kraft-combined-logs /tmp/kafka-logs
+              if [ ! -f /tmp/kraft-combined-logs/meta.properties ]; then
+                bin/kafka-storage.sh format -t cosmicblanket00000000000 -c /opt/kafka/config/kraft/server.properties
+              fi
+          env:
+            - name: LOG_DIR
+              value: /tmp/kafka-logs
+          volumeMounts:
+            - name: config
+              mountPath: /opt/kafka/config/kraft/server.properties
+              subPath: server.properties
+            - name: data
+              mountPath: /tmp/kraft-combined-logs
+      containers:
+        - name: kafka
+          image: quay.io/strimzi/kafka:latest-kafka-3.7.0
+          command:
+            - /bin/bash
+            - -c
+            - |
+              export LOG_DIR=/tmp/kafka-logs
+              mkdir -p /tmp/kafka-logs
+              bin/kafka-server-start.sh /opt/kafka/config/kraft/server.properties
+          env:
+            - name: LOG_DIR
+              value: /tmp/kafka-logs
+          ports:
+            - containerPort: 9092
+              name: kafka
+          volumeMounts:
+            - name: config
+              mountPath: /opt/kafka/config/kraft/server.properties
+              subPath: server.properties
+            - name: data
+              mountPath: /tmp/kraft-combined-logs
+          resources:
+            requests:
+              memory: 256Mi
+              cpu: 100m
+            limits:
+              memory: 1Gi
+              cpu: 500m
+          readinessProbe:
+            tcpSocket:
+              port: 9092
+            initialDelaySeconds: 20
+            periodSeconds: 10
+      volumes:
+        - name: config
+          configMap:
+            name: kafka-config
+        - name: data
+          emptyDir: {}

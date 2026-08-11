@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: licensing-service
+  labels:
+    app: licensing-service
+    app.kubernetes.io/part-of: cosmic-blanket
+  annotations:
+    image.openshift.io/triggers: >-
+      [{"from":{"kind":"ImageStreamTag","name":"licensing-service:latest"},
+        "fieldPath":"spec.template.spec.containers[?(@.name==\"licensing-service\")].image"}]
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: licensing-service
+  template:
+    metadata:
+      labels:
+        app: licensing-service
+    spec:
+      containers:
+        - name: licensing-service
+          image: " "
+          ports:
+            - containerPort: 8080
+          env:
+            - name: QUARKUS_HTTP_PORT
+              value: "8080"
+            - name: QUARKUS_DATASOURCE_JDBC_URL
+              value: jdbc:postgresql://postgres:5432/cosmic_blanket
+            - name: QUARKUS_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: POSTGRES_USER
+            - name: QUARKUS_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: POSTGRES_PASSWORD
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: kafka:9092
+          readinessProbe:
+            httpGet:
+              path: /q/health/ready
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /q/health/live
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          resources:
+            requests:
+              memory: 256Mi
+              cpu: 100m
+            limits:
+              memory: 512Mi
+              cpu: 500m

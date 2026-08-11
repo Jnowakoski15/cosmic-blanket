@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+  labels:
+    app: keycloak
+    app.kubernetes.io/part-of: cosmic-blanket
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: keycloak
+  template:
+    metadata:
+      labels:
+        app: keycloak
+    spec:
+      containers:
+        - name: keycloak
+          image: quay.io/keycloak/keycloak:25.0
+          args:
+            - start-dev
+            - --import-realm
+            - --proxy-headers=xforwarded
+            - --hostname-strict=false
+            - --http-enabled=true
+          ports:
+            - containerPort: 8080
+            - containerPort: 9000
+          env:
+            - name: KC_DB
+              value: dev-mem
+            - name: KEYCLOAK_ADMIN
+              value: admin
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              value: admin
+            - name: KC_HEALTH_ENABLED
+              value: "true"
+          volumeMounts:
+            - name: realm-config
+              mountPath: /opt/keycloak/data/import
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 9000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 9000
+            initialDelaySeconds: 60
+            periodSeconds: 15
+          resources:
+            requests:
+              memory: 512Mi
+              cpu: 250m
+            limits:
+              memory: 1Gi
+              cpu: "1"
+      volumes:
+        - name: realm-config
+          configMap:
+            name: keycloak-realm

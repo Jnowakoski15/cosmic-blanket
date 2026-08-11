@@ -72,4 +72,20 @@ Single PostgreSQL instance with schema-per-service isolation. Each service manag
 All based on `registry.access.redhat.com/ubi9/openjdk-21-runtime:latest`. Multi-stage builds defined in `deployment/containers/`. Frontend uses UBI 9 + Nginx.
 
 ### Deployment
-Helm umbrella chart at `deployment/helm/cosmic-blanket/` with sub-charts per service. Backend services deploy as Knative Services (serverless). Frontend as standard Deployment.
+
+**GitOps (recommended):** Kustomize base + overlays managed by Red Hat GitOps (ArgoCD). App-of-apps pattern with sync waves deploys infrastructure → builds → services in order.
+```bash
+# New cluster setup
+oc new-project cosmic-blanket
+oc label namespace cosmic-blanket argocd.argoproj.io/managed-by=openshift-gitops
+oc apply -f deployment/gitops/argocd/appproject.yaml -n openshift-gitops
+oc apply -f deployment/gitops/argocd/root-app.yaml -n openshift-gitops
+
+# Start builds (first time)
+for bc in gateway licensing-service vital-records-service property-tax-service ai-service frontend; do
+  oc start-build $bc -n cosmic-blanket
+done
+```
+Per-cluster config: edit `CLUSTER_DOMAIN` in `deployment/gitops/services/overlays/dev/patches/frontend-env.yaml` and `gateway-env.yaml`.
+
+**Legacy:** Raw OpenShift manifests in `deployment/openshift/` and Helm charts in `deployment/helm/`.

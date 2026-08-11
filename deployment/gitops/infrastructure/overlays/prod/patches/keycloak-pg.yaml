@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+spec:
+  template:
+    spec:
+      containers:
+        - name: keycloak
+          env:
+            - name: KC_DB
+              value: postgres
+            - name: KC_DB_URL
+              value: jdbc:postgresql://postgres:5432/cosmic_blanket?currentSchema=keycloak
+            - name: KC_DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: POSTGRES_USER
+            - name: KC_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: POSTGRES_PASSWORD
+            - name: KEYCLOAK_ADMIN
+              value: admin
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              value: admin
+            - name: KC_HEALTH_ENABLED
+              value: "true"

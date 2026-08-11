@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  labels:
+    app: frontend
+    app.kubernetes.io/part-of: cosmic-blanket
+  annotations:
+    image.openshift.io/triggers: >-
+      [{"from":{"kind":"ImageStreamTag","name":"frontend:latest"},
+        "fieldPath":"spec.template.spec.containers[?(@.name==\"frontend\")].image"}]
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: " "
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: nginx-conf
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+            - name: env-config
+              mountPath: /usr/share/nginx/html/env-config.js
+              subPath: env-config.js
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests:
+              memory: 64Mi
+              cpu: 50m
+            limits:
+              memory: 128Mi
+              cpu: 200m
+      volumes:
+        - name: nginx-conf
+          configMap:
+            name: frontend-nginx
+        - name: env-config
+          configMap:
+            name: frontend-env-config
