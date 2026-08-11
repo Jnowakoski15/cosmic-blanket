@@ -1,0 +1,308 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-credentials
+type: Opaque
+stringData:
+  POSTGRES_DB: cosmic_blanket
+  POSTGRES_USER: cosmic
+  POSTGRES_PASSWORD: cosmic
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-data
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  labels:
+    app: postgres
+    app.kubernetes.io/part-of: cosmic-blanket
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: registry.redhat.io/rhel9/postgresql-16:latest
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRESQL_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: POSTGRES_DB
+            - name: POSTGRESQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: POSTGRES_USER
+            - name: POSTGRESQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: POSTGRES_PASSWORD
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/pgsql/data
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "cosmic", "-d", "cosmic_blanket"]
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "cosmic", "-d", "cosmic_blanket"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          resources:
+            requests:
+              memory: 256Mi
+              cpu: 100m
+            limits:
+              memory: 512Mi
+              cpu: 500m
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: postgres-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  labels:
+    app: postgres
+spec:
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka
+  labels:
+    app: kafka
+    app.kubernetes.io/part-of: cosmic-blanket
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka
+  template:
+    metadata:
+      labels:
+        app: kafka
+    spec:
+      containers:
+        - name: redpanda
+          image: docker.io/vectorized/redpanda:latest
+          command:
+            - rpk
+            - redpanda
+            - start
+            - --smp=1
+            - --memory=256M
+            - --overprovisioned
+            - --kafka-addr=PLAINTEXT://0.0.0.0:29092
+            - --advertise-kafka-addr=PLAINTEXT://kafka:29092
+          ports:
+            - containerPort: 29092
+              name: kafka
+          resources:
+            requests:
+              memory: 256Mi
+              cpu: 100m
+            limits:
+              memory: 512Mi
+              cpu: 500m
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka
+  labels:
+    app: kafka
+spec:
+  selector:
+    app: kafka
+  ports:
+    - port: 29092
+      targetPort: 29092
+      name: kafka
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-realm
+data:
+  nova-realm.json: |
+    {
+      "realm": "nova",
+      "enabled": true,
+      "registrationAllowed": true,
+      "roles": {
+        "realm": [
+          { "name": "citizen", "description": "State citizen" },
+          { "name": "employee", "description": "State government employee" },
+          { "name": "admin", "description": "System administrator" }
+        ]
+      },
+      "clients": [
+        {
+          "clientId": "cosmic-gateway",
+          "enabled": true,
+          "publicClient": true,
+          "directAccessGrantsEnabled": true,
+          "standardFlowEnabled": true,
+          "redirectUris": ["*"],
+          "webOrigins": ["*"],
+          "defaultClientScopes": ["openid", "profile", "email", "roles"]
+        },
+        {
+          "clientId": "cosmic-frontend",
+          "enabled": true,
+          "publicClient": true,
+          "directAccessGrantsEnabled": false,
+          "standardFlowEnabled": true,
+          "implicitFlowEnabled": false,
+          "redirectUris": ["*"],
+          "webOrigins": ["*"],
+          "defaultClientScopes": ["openid", "profile", "email", "roles"],
+          "attributes": {
+            "pkce.code.challenge.method": "S256"
+          }
+        }
+      ],
+      "users": [
+        {
+          "username": "citizen1",
+          "enabled": true,
+          "email": "citizen1@nova.gov",
+          "firstName": "Jane",
+          "lastName": "Doe",
+          "credentials": [{ "type": "password", "value": "password", "temporary": false }],
+          "realmRoles": ["citizen"]
+        },
+        {
+          "username": "employee1",
+          "enabled": true,
+          "email": "employee1@nova.gov",
+          "firstName": "John",
+          "lastName": "Smith",
+          "credentials": [{ "type": "password", "value": "password", "temporary": false }],
+          "realmRoles": ["employee"]
+        },
+        {
+          "username": "admin1",
+          "enabled": true,
+          "email": "admin1@nova.gov",
+          "firstName": "Admin",
+          "lastName": "User",
+          "credentials": [{ "type": "password", "value": "password", "temporary": false }],
+          "realmRoles": ["admin"]
+        }
+      ]
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+  labels:
+    app: keycloak
+    app.kubernetes.io/part-of: cosmic-blanket
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: keycloak
+  template:
+    metadata:
+      labels:
+        app: keycloak
+    spec:
+      containers:
+        - name: keycloak
+          image: quay.io/keycloak/keycloak:25.0
+          args: ["start-dev", "--import-realm", "--proxy-headers=xforwarded", "--hostname-strict=false", "--http-enabled=true"]
+          ports:
+            - containerPort: 8080
+          env:
+            - name: KC_DB
+              value: dev-mem
+            - name: KEYCLOAK_ADMIN
+              value: admin
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              value: admin
+            - name: KC_HEALTH_ENABLED
+              value: "true"
+          volumeMounts:
+            - name: realm-config
+              mountPath: /opt/keycloak/data/import
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          resources:
+            requests:
+              memory: 512Mi
+              cpu: 250m
+            limits:
+              memory: 1Gi
+              cpu: "1"
+      volumes:
+        - name: realm-config
+          configMap:
+            name: keycloak-realm
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+  labels:
+    app: keycloak
+spec:
+  selector:
+    app: keycloak
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: keycloak
+  labels:
+    app: keycloak
+spec:
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  to:
+    kind: Service
+    name: keycloak
+  port:
+    targetPort: 8080

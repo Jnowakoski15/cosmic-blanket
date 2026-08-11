@@ -17,8 +17,10 @@ const AuthContext = createContext<AuthContextType>({
   logout: () => {},
 });
 
+const keycloakUrl = (window as any).__COSMIC_CONFIG__?.KEYCLOAK_URL || 'http://localhost:8180/realms/nova';
+
 const userManager = new UserManager({
-  authority: 'http://localhost:8180/realms/nova',
+  authority: keycloakUrl,
   client_id: 'cosmic-frontend',
   redirect_uri: window.location.origin + '/',
   post_logout_redirect_uri: window.location.origin + '/',
