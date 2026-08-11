@@ -5,7 +5,7 @@ metadata:
 spec:
   source:
     git:
-      ref: main
+      ref: feature/cosmic-blanket-scaffold
 ---
 apiVersion: build.openshift.io/v1
 kind: BuildConfig
@@ -14,7 +14,7 @@ metadata:
 spec:
   source:
     git:
-      ref: main
+      ref: feature/cosmic-blanket-scaffold
 ---
 apiVersion: build.openshift.io/v1
 kind: BuildConfig
@@ -23,7 +23,7 @@ metadata:
 spec:
   source:
     git:
-      ref: main
+      ref: feature/cosmic-blanket-scaffold
 ---
 apiVersion: build.openshift.io/v1
 kind: BuildConfig
@@ -32,7 +32,7 @@ metadata:
 spec:
   source:
     git:
-      ref: main
+      ref: feature/cosmic-blanket-scaffold
 ---
 apiVersion: build.openshift.io/v1
 kind: BuildConfig
@@ -41,7 +41,7 @@ metadata:
 spec:
   source:
     git:
-      ref: main
+      ref: feature/cosmic-blanket-scaffold
 ---
 apiVersion: build.openshift.io/v1
 kind: BuildConfig
@@ -50,4 +50,4 @@ metadata:
 spec:
   source:
     git:
-      ref: main
+      ref: feature/cosmic-blanket-scaffold
