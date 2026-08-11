@@ -1,0 +1,19 @@
+apiVersion: v2
+name: cosmic-blanket
+version: 1.0.0
+description: State of Nova Government Web Platform
+type: application
+appVersion: "1.0.0"
+dependencies:
+  - name: gateway
+    version: 1.0.0
+  - name: licensing-service
+    version: 1.0.0
+  - name: vital-records-service
+    version: 1.0.0
+  - name: property-tax-service
+    version: 1.0.0
+  - name: ai-service
+    version: 1.0.0
+  - name: frontend
+    version: 1.0.0

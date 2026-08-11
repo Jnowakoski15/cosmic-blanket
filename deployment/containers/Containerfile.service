@@ -1,0 +1,24 @@
+# Multi-stage build for Quarkus services on Red Hat UBI 9
+# Usage: podman build --build-arg SERVICE_NAME=gateway --build-arg SERVICE_PORT=8080 -f Containerfile.service ../..
+
+ARG SERVICE_NAME
+ARG SERVICE_PORT=8080
+
+# Stage 1: Build
+FROM registry.access.redhat.com/ubi9/openjdk-21:latest AS builder
+ARG SERVICE_NAME
+WORKDIR /build
+COPY pom.xml ./
+COPY common/ ./common/
+COPY services/${SERVICE_NAME}/ ./services/${SERVICE_NAME}/
+USER root
+RUN mvn -B package -pl common,services/${SERVICE_NAME} -am -DskipTests -Dmaven.javadoc.skip=true
+
+# Stage 2: Runtime
+FROM registry.access.redhat.com/ubi9/openjdk-21-runtime:latest
+ARG SERVICE_NAME
+ARG SERVICE_PORT
+ENV LANGUAGE='en_US:en'
+COPY --from=builder /build/services/${SERVICE_NAME}/target/quarkus-app/ /deployments/
+EXPOSE ${SERVICE_PORT}
+ENTRYPOINT ["java", "-jar", "/deployments/quarkus-run.jar"]

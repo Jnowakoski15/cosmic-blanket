@@ -1,0 +1,18 @@
+# Multi-stage build for React frontend on Red Hat UBI 9
+# Usage: podman build -f Containerfile.frontend ../..
+
+# Stage 1: Build
+FROM registry.access.redhat.com/ubi9/nodejs-20:latest AS builder
+WORKDIR /app
+COPY frontend/package*.json ./
+RUN npm ci
+COPY frontend/ ./
+RUN npm run build
+
+# Stage 2: Serve with Nginx
+FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
+RUN microdnf install -y nginx && microdnf clean all
+COPY --from=builder /app/dist /usr/share/nginx/html
+COPY deployment/containers/nginx.conf /etc/nginx/nginx.conf
+EXPOSE 8080
+CMD ["nginx", "-g", "daemon off;"]
