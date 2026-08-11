@@ -29,7 +29,19 @@ spec:
             - containerPort: 9000
           env:
             - name: KC_DB
-              value: dev-mem
+              value: postgres
+            - name: KC_DB_URL
+              value: jdbc:postgresql://postgres:5432/cosmic_blanket?currentSchema=keycloak
+            - name: KC_DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: POSTGRES_USER
+            - name: KC_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: POSTGRES_PASSWORD
             - name: KEYCLOAK_ADMIN
               value: admin
             - name: KEYCLOAK_ADMIN_PASSWORD
