@@ -15,6 +15,34 @@ spec:
       labels:
         app: keycloak
     spec:
+      initContainers:
+        - name: create-keycloak-schema
+          image: registry.redhat.io/rhel9/postgresql-16:latest
+          command:
+            - /bin/bash
+            - -c
+            - |
+              until pg_isready -h postgres -U "$POSTGRESQL_USER" -d "$POSTGRESQL_DATABASE"; do
+                echo "Waiting for PostgreSQL..."
+                sleep 2
+              done
+              psql -h postgres -U "$POSTGRESQL_USER" -d "$POSTGRESQL_DATABASE" -c "CREATE SCHEMA IF NOT EXISTS keycloak;"
+          env:
+            - name: POSTGRESQL_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: POSTGRES_DB
+            - name: POSTGRESQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: POSTGRES_USER
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: POSTGRES_PASSWORD
       containers:
         - name: keycloak
           image: quay.io/keycloak/keycloak:25.0
