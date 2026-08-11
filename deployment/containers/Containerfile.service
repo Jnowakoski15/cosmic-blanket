@@ -10,7 +10,7 @@ ARG SERVICE_NAME
 WORKDIR /build
 COPY pom.xml ./
 COPY common/ ./common/
-COPY services/${SERVICE_NAME}/ ./services/${SERVICE_NAME}/
+COPY services/ ./services/
 USER root
 RUN mvn -B package -pl common,services/${SERVICE_NAME} -am -DskipTests -Dmaven.javadoc.skip=true
 
