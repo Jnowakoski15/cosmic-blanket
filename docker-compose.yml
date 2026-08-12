@@ -1,0 +1,169 @@
+services:
+  # Infrastructure
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: cosmic_blanket
+      POSTGRES_USER: cosmic
+      POSTGRES_PASSWORD: cosmic
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cosmic -d cosmic_blanket"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  kafka:
+    image: docker.io/vectorized/redpanda:latest
+    command:
+      - redpanda
+      - start
+      - --smp=1
+      - --memory=512M
+      - --overprovisioned
+      - --kafka-addr=PLAINTEXT://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092
+      - --advertise-kafka-addr=PLAINTEXT://kafka:29092,OUTSIDE://localhost:9092
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    healthcheck:
+      test: ["CMD", "rpk", "cluster", "health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:25.0
+    command: start-dev --import-realm
+    environment:
+      KC_DB: dev-mem
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "8180:8080"
+    volumes:
+      - ./services/gateway/src/main/resources/nova-realm.json:/opt/keycloak/data/import/nova-realm.json:ro
+
+  milvus:
+    image: milvusdb/milvus:v2.4.4
+    ports:
+      - "19530:19530"
+    environment:
+      ETCD_USE_EMBED: "true"
+      COMMON_STORAGETYPE: local
+    volumes:
+      - milvusdata:/var/lib/milvus
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Application services
+  gateway:
+    build:
+      context: .
+      dockerfile: deployment/containers/Containerfile.service
+      args:
+        SERVICE_NAME: gateway
+        SERVICE_PORT: 8080
+    ports:
+      - "8080:8080"
+    environment:
+      QUARKUS_REST_CLIENT_LICENSING_SERVICE_URL: http://licensing-service:8081
+      QUARKUS_REST_CLIENT_VITAL_RECORDS_SERVICE_URL: http://vital-records-service:8082
+      QUARKUS_REST_CLIENT_PROPERTY_TAX_SERVICE_URL: http://property-tax-service:8083
+      QUARKUS_REST_CLIENT_AI_SERVICE_URL: http://ai-service:8084
+    depends_on:
+      licensing-service:
+        condition: service_started
+      vital-records-service:
+        condition: service_started
+      property-tax-service:
+        condition: service_started
+
+  licensing-service:
+    build:
+      context: .
+      dockerfile: deployment/containers/Containerfile.service
+      args:
+        SERVICE_NAME: licensing-service
+        SERVICE_PORT: 8081
+    ports:
+      - "8081:8081"
+    environment:
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/cosmic_blanket
+      QUARKUS_DATASOURCE_USERNAME: cosmic
+      QUARKUS_DATASOURCE_PASSWORD: cosmic
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  vital-records-service:
+    build:
+      context: .
+      dockerfile: deployment/containers/Containerfile.service
+      args:
+        SERVICE_NAME: vital-records-service
+        SERVICE_PORT: 8082
+    ports:
+      - "8082:8082"
+    environment:
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/cosmic_blanket
+      QUARKUS_DATASOURCE_USERNAME: cosmic
+      QUARKUS_DATASOURCE_PASSWORD: cosmic
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  property-tax-service:
+    build:
+      context: .
+      dockerfile: deployment/containers/Containerfile.service
+      args:
+        SERVICE_NAME: property-tax-service
+        SERVICE_PORT: 8083
+    ports:
+      - "8083:8083"
+    environment:
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/cosmic_blanket
+      QUARKUS_DATASOURCE_USERNAME: cosmic
+      QUARKUS_DATASOURCE_PASSWORD: cosmic
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  ai-service:
+    build:
+      context: .
+      dockerfile: deployment/containers/Containerfile.service
+      args:
+        SERVICE_NAME: ai-service
+        SERVICE_PORT: 8084
+    ports:
+      - "8084:8084"
+    environment:
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/cosmic_blanket
+      QUARKUS_DATASOURCE_USERNAME: cosmic
+      QUARKUS_DATASOURCE_PASSWORD: cosmic
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: deployment/containers/Containerfile.frontend
+    ports:
+      - "3000:8080"
+    depends_on:
+      - gateway
+
+volumes:
+  pgdata:
+  milvusdata:

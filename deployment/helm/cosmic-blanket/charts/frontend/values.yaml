@@ -1,0 +1,15 @@
+image:
+  repository: cosmic-blanket/frontend
+  tag: latest
+  pullPolicy: IfNotPresent
+replicas: 2
+service:
+  port: 8080
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+env: {}

@@ -1,0 +1,54 @@
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+
+gateway:
+  image:
+    repository: cosmic-blanket/gateway
+    tag: latest
+  service:
+    port: 8080
+
+licensing-service:
+  image:
+    repository: cosmic-blanket/licensing-service
+    tag: latest
+  service:
+    port: 8081
+  database:
+    schema: licensing
+
+vital-records-service:
+  image:
+    repository: cosmic-blanket/vital-records-service
+    tag: latest
+  service:
+    port: 8082
+  database:
+    schema: vital_records
+
+property-tax-service:
+  image:
+    repository: cosmic-blanket/property-tax-service
+    tag: latest
+  service:
+    port: 8083
+  database:
+    schema: property_tax
+
+ai-service:
+  image:
+    repository: cosmic-blanket/ai-service
+    tag: latest
+  service:
+    port: 8084
+  database:
+    schema: ai
+
+frontend:
+  image:
+    repository: cosmic-blanket/frontend
+    tag: latest
+  replicas: 2
+  service:
+    port: 8080

@@ -1,0 +1,29 @@
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: gateway
+---
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: licensing-service
+---
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: vital-records-service
+---
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: property-tax-service
+---
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: ai-service
+---
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: frontend

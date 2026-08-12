@@ -1,0 +1,36 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: cosmic-blanket
+  namespace: openshift-gitops
+spec:
+  description: Cosmic Blanket - State of Nova Government Portal
+  sourceRepos:
+    - https://github.com/Jnowakoski15/cosmic-blanket.git
+  destinations:
+    - namespace: cosmic-blanket
+      server: https://kubernetes.default.svc
+    - namespace: openshift-gitops
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+  namespaceResourceWhitelist:
+    - group: argoproj.io
+      kind: Application
+    - group: ""
+      kind: ConfigMap
+    - group: ""
+      kind: Secret
+    - group: ""
+      kind: Service
+    - group: ""
+      kind: PersistentVolumeClaim
+    - group: apps
+      kind: Deployment
+    - group: route.openshift.io
+      kind: Route
+    - group: image.openshift.io
+      kind: ImageStream
+    - group: build.openshift.io
+      kind: BuildConfig

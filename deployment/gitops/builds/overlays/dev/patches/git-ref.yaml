@@ -1,0 +1,53 @@
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: gateway
+spec:
+  source:
+    git:
+      ref: feature/cosmic-blanket-scaffold
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: licensing-service
+spec:
+  source:
+    git:
+      ref: feature/cosmic-blanket-scaffold
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: vital-records-service
+spec:
+  source:
+    git:
+      ref: feature/cosmic-blanket-scaffold
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: property-tax-service
+spec:
+  source:
+    git:
+      ref: feature/cosmic-blanket-scaffold
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: ai-service
+spec:
+  source:
+    git:
+      ref: feature/cosmic-blanket-scaffold
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: frontend
+spec:
+  source:
+    git:
+      ref: feature/cosmic-blanket-scaffold

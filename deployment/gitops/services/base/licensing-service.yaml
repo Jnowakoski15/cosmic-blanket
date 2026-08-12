@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: licensing-service
+  labels:
+    app: licensing-service
+spec:
+  selector:
+    app: licensing-service
+  ports:
+    - port: 8080
+      targetPort: 8080

@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway
+spec:
+  template:
+    spec:
+      containers:
+        - name: gateway
+          env:
+            - name: QUARKUS_REST_CLIENT_LICENSING_SERVICE_URL
+              value: http://licensing-service:8080
+            - name: QUARKUS_REST_CLIENT_VITAL_RECORDS_SERVICE_URL
+              value: http://vital-records-service:8080
+            - name: QUARKUS_REST_CLIENT_PROPERTY_TAX_SERVICE_URL
+              value: http://property-tax-service:8080
+            - name: QUARKUS_REST_CLIENT_AI_SERVICE_URL
+              value: http://ai-service:8080
+            - name: QUARKUS_OIDC_AUTH_SERVER_URL
+              value: http://keycloak:8080/realms/nova
+            - name: QUARKUS_OIDC_TOKEN_ISSUER
+              value: any
+            - name: QUARKUS_OIDC_TLS_VERIFICATION
+              value: none
+            - name: QUARKUS_HTTP_AUTH_PERMISSION_PUBLICGET_PATHS
+              value: /api/*
+            - name: QUARKUS_HTTP_AUTH_PERMISSION_PUBLICGET_POLICY
+              value: permit
+            - name: QUARKUS_HTTP_AUTH_PERMISSION_PUBLICGET_METHODS
+              value: GET
+            - name: QUARKUS_HTTP_CORS_ORIGINS
+              value: "https://frontend-cosmic-blanket.apps.CLUSTER_DOMAIN"

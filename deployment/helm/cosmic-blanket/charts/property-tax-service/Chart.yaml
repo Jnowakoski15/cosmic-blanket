@@ -1,0 +1,5 @@
+apiVersion: v2
+name: property-tax-service
+version: 1.0.0
+description: Property tax service for Cosmic Blanket platform
+type: application

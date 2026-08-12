@@ -1,0 +1,192 @@
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: gateway
+  labels:
+    app: gateway
+spec:
+  source:
+    type: Git
+    git:
+      uri: https://github.com/Jnowakoski15/cosmic-blanket.git
+      ref: main
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: deployment/containers/Containerfile.service
+      buildArgs:
+        - name: SERVICE_NAME
+          value: gateway
+        - name: SERVICE_PORT
+          value: "8080"
+  output:
+    to:
+      kind: ImageStreamTag
+      name: gateway:latest
+  resources:
+    requests:
+      memory: 1Gi
+      cpu: 500m
+    limits:
+      memory: 3Gi
+      cpu: "2"
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: licensing-service
+  labels:
+    app: licensing-service
+spec:
+  source:
+    type: Git
+    git:
+      uri: https://github.com/Jnowakoski15/cosmic-blanket.git
+      ref: main
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: deployment/containers/Containerfile.service
+      buildArgs:
+        - name: SERVICE_NAME
+          value: licensing-service
+        - name: SERVICE_PORT
+          value: "8080"
+  output:
+    to:
+      kind: ImageStreamTag
+      name: licensing-service:latest
+  resources:
+    requests:
+      memory: 1Gi
+      cpu: 500m
+    limits:
+      memory: 3Gi
+      cpu: "2"
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: vital-records-service
+  labels:
+    app: vital-records-service
+spec:
+  source:
+    type: Git
+    git:
+      uri: https://github.com/Jnowakoski15/cosmic-blanket.git
+      ref: main
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: deployment/containers/Containerfile.service
+      buildArgs:
+        - name: SERVICE_NAME
+          value: vital-records-service
+        - name: SERVICE_PORT
+          value: "8080"
+  output:
+    to:
+      kind: ImageStreamTag
+      name: vital-records-service:latest
+  resources:
+    requests:
+      memory: 1Gi
+      cpu: 500m
+    limits:
+      memory: 3Gi
+      cpu: "2"
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: property-tax-service
+  labels:
+    app: property-tax-service
+spec:
+  source:
+    type: Git
+    git:
+      uri: https://github.com/Jnowakoski15/cosmic-blanket.git
+      ref: main
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: deployment/containers/Containerfile.service
+      buildArgs:
+        - name: SERVICE_NAME
+          value: property-tax-service
+        - name: SERVICE_PORT
+          value: "8080"
+  output:
+    to:
+      kind: ImageStreamTag
+      name: property-tax-service:latest
+  resources:
+    requests:
+      memory: 1Gi
+      cpu: 500m
+    limits:
+      memory: 3Gi
+      cpu: "2"
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: ai-service
+  labels:
+    app: ai-service
+spec:
+  source:
+    type: Git
+    git:
+      uri: https://github.com/Jnowakoski15/cosmic-blanket.git
+      ref: main
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: deployment/containers/Containerfile.service
+      buildArgs:
+        - name: SERVICE_NAME
+          value: ai-service
+        - name: SERVICE_PORT
+          value: "8080"
+  output:
+    to:
+      kind: ImageStreamTag
+      name: ai-service:latest
+  resources:
+    requests:
+      memory: 1Gi
+      cpu: 500m
+    limits:
+      memory: 3Gi
+      cpu: "2"
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: frontend
+  labels:
+    app: frontend
+spec:
+  source:
+    type: Git
+    git:
+      uri: https://github.com/Jnowakoski15/cosmic-blanket.git
+      ref: main
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: deployment/containers/Containerfile.frontend
+  output:
+    to:
+      kind: ImageStreamTag
+      name: frontend:latest
+  resources:
+    requests:
+      memory: 512Mi
+      cpu: 250m
+    limits:
+      memory: 2Gi
+      cpu: "1"
