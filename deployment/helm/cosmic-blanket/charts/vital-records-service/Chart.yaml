@@ -1,0 +1,5 @@
+apiVersion: v2
+name: vital-records-service
+version: 1.0.0
+description: Vital records service for Cosmic Blanket platform
+type: application

@@ -1,0 +1,5 @@
+apiVersion: v2
+name: ai-service
+version: 1.0.0
+description: AI service for Cosmic Blanket platform
+type: application

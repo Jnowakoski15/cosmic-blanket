@@ -1,0 +1,14 @@
+image:
+  repository: cosmic-blanket/ai-service
+  tag: latest
+  pullPolicy: IfNotPresent
+service:
+  port: 8084
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+env: {}

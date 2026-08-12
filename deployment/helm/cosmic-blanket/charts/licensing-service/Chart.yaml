@@ -1,0 +1,5 @@
+apiVersion: v2
+name: licensing-service
+version: 1.0.0
+description: Licensing service for Cosmic Blanket platform
+type: application

@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cosmic-blanket-services
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: cosmic-blanket
+  source:
+    repoURL: https://github.com/Jnowakoski15/cosmic-blanket.git
+    targetRevision: feature/cosmic-blanket-scaffold
+    path: deployment/gitops/services/overlays/dev
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cosmic-blanket
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/template/spec/containers/0/image
