@@ -2,27 +2,17 @@
 
 A modern US state government website for the fictional **State of Nova**, built as a Quarkus microservices platform deployed on OpenShift with Red Hat UBI 9 containers.
 
-## Live Environment
+## Table of Contents
 
-| Component | URL |
-|-----------|-----|
-| Frontend | https://frontend-cosmic-blanket.apps.wz405duy.eastus.aroapp.io |
-| Keycloak Admin | https://keycloak-cosmic-blanket.apps.wz405duy.eastus.aroapp.io |
-| API (via frontend) | https://frontend-cosmic-blanket.apps.wz405duy.eastus.aroapp.io/api/ |
-
-## Test Accounts
-
-All accounts use the Keycloak `nova` realm. Log in via the **Login** button in the top-right of the frontend.
-
-| Username | Password | Role | Description |
-|----------|----------|------|-------------|
-| `citizen1` | `password` | Citizen | Jane Doe — can submit license applications, request vital records |
-| `employee1` | `password` | Employee | John Smith — state employee, can update application statuses |
-| `admin1` | `password` | Admin | Admin User — full administrative access |
-
-**Keycloak Admin Console:** username `admin`, password `admin`
-
-> GET requests are public. POST/PUT/PATCH/DELETE require authentication.
+- [Architecture](#architecture)
+- [Tech Stack](#tech-stack)
+- [Getting Started](#getting-started)
+- [Build Commands](#build-commands)
+- [Project Structure](#project-structure)
+- [Domain Service Pattern](#domain-service-pattern)
+- [Deployment](#deployment)
+- [Contributing](#contributing)
+- [License](#license)
 
 ## Architecture
 
@@ -60,14 +50,16 @@ All accounts use the Keycloak `nova` realm. Log in via the **Login** button in t
 
 ### Services
 
-| Service | Port | Schema | Description |
-|---------|------|--------|-------------|
-| **Gateway** | 8080 | — | API proxy, CORS, OIDC token validation, request logging |
-| **Licensing** | 8080 | `licensing` | License applications and issued licenses |
-| **Vital Records** | 8080 | `vital_records` | Birth/death/marriage certificate requests with tracking numbers |
-| **Property Tax** | 8080 | `property_tax` | Property search and tax record lookup |
-| **AI** | 8080 | `ai` | RAG chatbot, semantic search, document indexing via Kafka |
-| **Frontend** | 8080 | — | React SPA served by nginx, proxies `/api` to gateway |
+| Service | Dev Port | Schema | Description |
+|---------|----------|--------|-------------|
+| Gateway | 8080 | — | API proxy, CORS, OIDC token validation, request logging |
+| Licensing | 8081 | `licensing` | License applications and issued licenses |
+| Vital Records | 8082 | `vital_records` | Birth/death certificate requests with tracking numbers |
+| Property Tax | 8083 | `property_tax` | Property search and tax record lookup |
+| AI | 8084 | `ai` | RAG chatbot, semantic search, document indexing via Kafka |
+| Frontend | 5173 | — | React SPA served by Vite (dev) or nginx (prod) |
+
+Each service has its own README with full endpoint documentation. See `services/<name>/README.md`.
 
 ### API Endpoints
 
@@ -108,31 +100,51 @@ GET  /api/gateway/status                  Gateway health check
 | Vector DB | Milvus 2.4 (for AI semantic search) |
 | Frontend | React 18 + Vite + TypeScript + React Router v7 + TanStack Query v5 |
 | Containers | Red Hat UBI 9 (openjdk-21-runtime, nodejs-20, ubi-minimal) |
-| Orchestration | OpenShift 4.20 (Azure Red Hat OpenShift) |
-| Deployment | Helm umbrella chart with Knative-ready sub-charts |
+| Orchestration | OpenShift 4.x (tested on Azure Red Hat OpenShift) |
+| GitOps | Red Hat GitOps (ArgoCD) with Kustomize |
 
-## Local Development
+## Getting Started
 
 ### Prerequisites
 
 - Java 21 and Maven 3.9+ (install via [SDKMAN](https://sdkman.io/))
 - Node.js 20+
-- Podman or Docker
+- Podman or Docker (for Quarkus Dev Services)
 
 ### Quick Start
 
+Quarkus Dev Services automatically starts PostgreSQL, Kafka, and Keycloak containers — no manual infrastructure setup needed.
+
 ```bash
-# Backend — Quarkus Dev Services auto-starts PostgreSQL, Kafka, and Keycloak
+# Clone the repo
+git clone https://github.com/your-org/cosmic-blanket.git
+cd cosmic-blanket
+
+# Start a backend service (Dev Services handles the rest)
 cd services/licensing-service && mvn quarkus:dev    # starts on :8081
 
-# Frontend — Vite dev server proxies /api to :8080
+# In another terminal — start the frontend
 cd frontend && npm install && npm run dev           # starts on :5173
 
-# Full stack via containers
+# Or run the full stack via containers
 docker compose up -d
 ```
 
-### Build Commands
+### Test Accounts
+
+When running locally with Dev Services, Keycloak is pre-configured with a `nova` realm and these test accounts:
+
+| Username | Password | Role | Description |
+|----------|----------|------|-------------|
+| `citizen1` | `password` | Citizen | Can submit license applications, request vital records |
+| `employee1` | `password` | Employee | State employee, can update application statuses |
+| `admin1` | `password` | Admin | Full administrative access |
+
+**Keycloak Admin Console** (local only): username `admin`, password `admin`
+
+> GET requests are public. POST/PUT/PATCH/DELETE require authentication.
+
+## Build Commands
 
 ```bash
 source ~/.sdkman/bin/sdkman-init.sh
@@ -144,8 +156,8 @@ mvn clean verify               # compile + run all tests
 mvn test -pl services/licensing-service -Dtest=LicenseApplicationResourceTest
 
 # Frontend
-cd frontend && npm run dev     # dev server on :5173
-cd frontend && npm run build   # production build
+cd frontend && npm run dev       # dev server on :5173
+cd frontend && npm run build     # production build
 cd frontend && npx tsc --noEmit  # type-check only
 ```
 
@@ -162,22 +174,10 @@ cosmic-blanket/
 │       └── auth/                    # Roles constants
 ├── services/
 │   ├── gateway/                     # API Gateway (port 8080)
-│   │   └── src/main/
-│   │       ├── java/.../gateway/
-│   │       │   ├── client/          # REST client interfaces
-│   │       │   ├── resource/        # Proxy resources
-│   │       │   └── filter/          # Auth, logging filters
-│   │       └── resources/
-│   │           ├── application.properties
-│   │           └── nova-realm.json  # Keycloak realm config
 │   ├── licensing-service/           # License applications (port 8081)
 │   ├── vital-records-service/       # Certificate requests (port 8082)
 │   ├── property-tax-service/        # Property/tax records (port 8083)
 │   └── ai-service/                  # RAG chatbot + search (port 8084)
-│       └── src/main/java/.../ai/
-│           ├── llm/                 # LlmProvider interface + Claude impl
-│           ├── vector/              # VectorStore interface + Milvus impl
-│           └── rag/                 # DocumentChunker, Indexer, RagEngine
 ├── frontend/                        # React SPA (Vite + TypeScript)
 │   └── src/
 │       ├── api/                     # Axios client + typed API modules
@@ -188,6 +188,7 @@ cosmic-blanket/
 │       └── types/                   # TypeScript type definitions
 ├── deployment/
 │   ├── containers/                  # UBI 9 Containerfiles
+│   ├── gitops/                      # ArgoCD apps + Kustomize overlays
 │   ├── helm/cosmic-blanket/         # Helm umbrella chart + sub-charts
 │   └── openshift/                   # OpenShift deployment manifests
 └── docker-compose.yml               # Full local stack
@@ -208,21 +209,41 @@ Entity (JPA/Panache) → Repository → DTO → Mapper → Service → Resource
 - **Service**: `@ApplicationScoped @Transactional`, business logic + event publishing
 - **Resource**: `@Path` JAX-RS endpoint
 
-## OpenShift Deployment
+## Deployment
 
-The application is deployed on Azure Red Hat OpenShift (ARO) 4.20 using OpenShift BuildConfigs with Docker strategy.
+### Docker Compose (local)
 
 ```bash
-# Apply manifests in order
+docker compose up -d       # all services + infrastructure
+docker compose down
+```
+
+### OpenShift
+
+The application deploys on OpenShift using either GitOps (ArgoCD) or raw manifests.
+
+**GitOps (recommended):**
+
+```bash
+oc new-project cosmic-blanket
+oc label namespace cosmic-blanket argocd.argoproj.io/managed-by=openshift-gitops
+oc apply -f deployment/gitops/argocd/appproject.yaml -n openshift-gitops
+oc apply -f deployment/gitops/argocd/root-app.yaml -n openshift-gitops
+```
+
+**Manual:**
+
+```bash
 oc apply -f deployment/openshift/01-infrastructure.yaml
 oc apply -f deployment/openshift/02-builds.yaml
 oc apply -f deployment/openshift/03-services.yaml
 
-# Start all builds
 for bc in gateway licensing-service vital-records-service property-tax-service ai-service frontend; do
   oc start-build $bc
 done
 ```
+
+Configure your cluster domain in the Kustomize overlays before deploying. See `deployment/gitops/services/overlays/dev/`.
 
 ### Infrastructure Components
 
@@ -232,6 +253,18 @@ done
 | Kafka | `quay.io/strimzi/kafka:latest-kafka-3.7.0` | KRaft mode (no ZooKeeper) |
 | Keycloak | `quay.io/keycloak/keycloak:25.0` | PostgreSQL-backed, imports `nova` realm on startup |
 
+## Contributing
+
+Contributions are welcome! Please follow these steps:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/my-feature`)
+3. Make your changes and ensure tests pass (`mvn clean verify`)
+4. Commit with a descriptive message
+5. Push to your fork and open a Pull Request
+
+Please keep PRs focused — one feature or fix per PR.
+
 ## License
 
-This project is a demonstration/educational platform for the fictional State of Nova.
+This project is licensed under the [Apache License 2.0](LICENSE).
